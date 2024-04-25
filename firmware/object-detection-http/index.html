@@ -90,6 +90,37 @@
             });
         }
 
+        function startRecording() {
+
+            const button = document.getElementById("start-recording-button");
+            button.disabled = true;
+            button.innerText = "Recording...";
+
+            const element = document.getElementById("cam_canvas");
+            const context = element.getContext('2d');
+            const stream = element.captureStream(25);
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = e => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'video.webm';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+            recorder.start();
+
+            setTimeout(() => {
+                recorder.stop();
+                button.disabled = false;
+                button.innerText = "Start Recording";
+            }, 30000);
+        }
+
         // Function to save the image with a custom filename
         function saveImage() {
             const imgElt = document.getElementById("cam_canvas");
@@ -100,24 +131,20 @@
             // Generate a random 8-digit hex value
             const randomHex = generateRandomHex();
 
-            if (rawImageData) {
-                // Convert the raw image data to a Blob
-                const imageBlob = new Blob([rawImageData], { type: 'image/jpeg' });
+            // Convert the current canvas content to a data URL (image)
+            const dataUrl = imgElt.toDataURL('image/jpeg');
 
-                // Construct the filename using the label and random hex
-                const filename = `${imageLabel}.${randomHex}.jpg`;
+            // Construct the filename using the label and random hex
+            const filename = `${imageLabel}.${randomHex}.jpg`;
 
-                // Create a hidden anchor element and trigger the download
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(imageBlob);
-                a.download = filename;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                console.error('No raw image data available.');
-            }
+            // Create a hidden anchor element and trigger the download
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
                 
         // Main loop to fetch image and bounding boxes and draw them on the canvas
@@ -279,6 +306,7 @@
         <label for="image-label" class="input-label">Label:</label>
         <input id="image-label" type="text" required value="image">
         <button id="save-image-button">Save Image</button>
+        <button id="start-recording-button" onclick="startRecording()">Start Recording</button>
     </div>
     <div id="dynamic-fps-label">
         FPS: N/A

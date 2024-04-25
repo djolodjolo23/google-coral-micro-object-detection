@@ -92,7 +92,38 @@
                 console.error('No raw image data available.');
             }
         }
-                
+
+        function startRecording() {
+
+            const button = document.getElementById("start-recording-button");
+            button.disabled = true;
+            button.innerText = "Recording...";
+
+            const element = document.getElementById("cam_canvas");
+            const context = element.getContext('2d');
+            const stream = element.captureStream(25);
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = e => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'video.webm';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+            recorder.start();
+
+            setTimeout(() => {
+                recorder.stop();
+                button.disabled = false;
+                button.innerText = "Start Recording";
+            }, 30000);
+        }
+     
         // Main loop to fetch image and draw it on the canvas
         async function updateImage () {
 
@@ -208,6 +239,7 @@
         <label for="image-label" class="input-label">Label:</label>
         <input id="image-label" type="text" required value="image">
         <button id="save-image-button">Save Image</button>
+        <button onclick="startRecording()" id="start-recording-button">Start Recording</button>
     </div>
     <canvas id="cam_canvas"></canvas>
 </div>
